@@ -5,19 +5,38 @@ import {
   Text,
 } from 'react-native';
 
+import {
+  playCutSound,
+} from '../services/SoundService';
+
 export default function PrimaryButton({
   title,
   onPress,
   disabled = false,
 }) {
+  const handlePress = () => {
+    if (disabled) {
+      return;
+    }
+
+    playCutSound();
+
+    if (onPress) {
+      onPress();
+    }
+  };
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled}
       style={({ pressed }) => [
         styles.button,
-        pressed && !disabled && styles.pressedButton,
-        disabled && styles.disabledButton,
+        pressed &&
+          !disabled &&
+          styles.pressedButton,
+        disabled &&
+          styles.disabledButton,
       ]}
     >
       <Text style={styles.buttonText}>
