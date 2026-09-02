@@ -77,7 +77,9 @@ export default function GameScreen({
         }
       >
         <View style={styles.boardContainer}>
-          <LudoBoard />
+          <LudoBoard
+  players={players}
+/>
         </View>
 
         <Text style={styles.turnText}>
