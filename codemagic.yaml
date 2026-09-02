@@ -12,8 +12,13 @@ workflows:
         script: |
           npm install
 
+      - name: Install Expo
+        script: |
+          npm install -g expo-cli
+
       - name: Build Android APK
         script: |
+          npx expo prebuild --platform android
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
