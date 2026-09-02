@@ -1,174 +1,84 @@
 import React from 'react';
 import {
-  View,
   StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
-const DiceFace = ({ value }) => {
-  const dot = <View style={styles.diceDot} />;
-  const empty = (
-    <View
-      style={[
-        styles.diceDot,
-        { opacity: 0 },
-      ]}
-    />
-  );
-
-  const getDots = () => {
-    switch (value) {
-      case 1:
-        return (
-          <View style={styles.diceCenter}>
-            {dot}
-          </View>
-        );
-
-      case 2:
-        return (
-          <View style={styles.diceRowSpace}>
-            <View style={styles.diceCol}>
-              {dot}
-              {empty}
-            </View>
-
-            <View style={styles.diceCol}>
-              {empty}
-              {dot}
-            </View>
-          </View>
-        );
-
-      case 3:
-        return (
-          <View style={styles.diceRowSpace}>
-            <View style={styles.diceCol}>
-              {dot}
-              {empty}
-              {empty}
-            </View>
-
-            <View style={styles.diceCol}>
-              {empty}
-              {dot}
-              {empty}
-            </View>
-
-            <View style={styles.diceCol}>
-              {empty}
-              {empty}
-              {dot}
-            </View>
-          </View>
-        );
-
-      case 4:
-        return (
-          <View style={styles.diceRowSpace}>
-            <View style={styles.diceCol}>
-              {dot}
-              {dot}
-            </View>
-
-            <View style={styles.diceCol}>
-              {dot}
-              {dot}
-            </View>
-          </View>
-        );
-
-      case 5:
-        return (
-          <View style={styles.diceRowSpace}>
-            <View style={styles.diceCol}>
-              {dot}
-              {empty}
-              {dot}
-            </View>
-
-            <View style={styles.diceCol}>
-              {empty}
-              {dot}
-              {empty}
-            </View>
-
-            <View style={styles.diceCol}>
-              {dot}
-              {empty}
-              {dot}
-            </View>
-          </View>
-        );
-
-      case 6:
-        return (
-          <View style={styles.diceRowSpace}>
-            <View style={styles.diceCol}>
-              {dot}
-              {dot}
-              {dot}
-            </View>
-
-            <View style={styles.diceCol}>
-              {dot}
-              {dot}
-              {dot}
-            </View>
-          </View>
-        );
-
-      default:
-        return (
-          <View style={styles.diceCenter}>
-            {dot}
-          </View>
-        );
-    }
+export default function DiceFace({
+  value = 1,
+  size = 60,
+}) {
+  const dots = {
+    1: [5],
+    2: [1, 9],
+    3: [1, 5, 9],
+    4: [1, 3, 7, 9],
+    5: [1, 3, 5, 7, 9],
+    6: [1, 3, 4, 6, 7, 9],
   };
 
+  const activeDots = dots[value] || dots[1];
+
   return (
-    <View style={styles.diceBox}>
-      {getDots()}
+    <View
+      style={[
+        styles.dice,
+        {
+          width: size,
+          height: size,
+          borderRadius: size * 0.15,
+        },
+      ]}
+    >
+      <View style={styles.grid}>
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((position) => (
+          <View
+            key={position}
+            style={styles.dotContainer}
+          >
+            {activeDots.includes(position) && (
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    width: size * 0.12,
+                    height: size * 0.12,
+                    borderRadius: size * 0.06,
+                  },
+                ]}
+              />
+            )}
+          </View>
+        ))}
+      </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  diceBox: {
-    width: 42,
-    height: 42,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#cbd5e1',
+  dice: {
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 3,
+    elevation: 5,
   },
 
-  diceDot: {
-    width: 6.5,
-    height: 6.5,
-    borderRadius: 3.25,
-    backgroundColor: '#0f172a',
-    margin: 1.5,
-  },
-
-  diceCenter: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  diceRowSpace: {
+  grid: {
+    width: '80%',
+    height: '80%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 2,
+    flexWrap: 'wrap',
   },
 
-  diceCol: {
-    justifyContent: 'space-between',
+  dotContainer: {
+    width: '33.33%',
+    height: '33.33%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  dot: {
+    backgroundColor: '#111827',
   },
 });
-
-export default DiceFace;
