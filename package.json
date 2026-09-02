@@ -2,9 +2,11 @@
   "name": "ludo-supreme",
   "version": "1.0.0",
   "private": true,
+  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
+    "web": "expo start --web",
     "build": "expo export"
   },
   "dependencies": {
@@ -14,5 +16,7 @@
     "react": "19.0.0",
     "react-native": "0.79.5"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "babel-preset-expo": "~13.0.0"
+  }
 }
