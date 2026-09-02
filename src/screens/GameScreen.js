@@ -8,8 +8,10 @@ import {
   StyleSheet,
   Text,
   View,
+  ScrollView,
 } from 'react-native';
 
+import LudoBoard from '../components/LudoBoard';
 import DiceFace from '../components/DiceFace';
 import PrimaryButton from '../components/PrimaryButton';
 
@@ -31,14 +33,23 @@ export default function GameScreen({
   ] = useState(1);
 
   const handleRollDice = () => {
-    const newDiceValue =
-      rollDice();
+    const newDiceValue = rollDice();
 
-    setDiceValue(
-      newDiceValue
-    );
+    setDiceValue(newDiceValue);
 
     playDiceSound();
+  };
+
+  const getGameModeName = () => {
+    if (gameMode === 'computer') {
+      return 'Vs Computer';
+    }
+
+    if (gameMode === 'pass-play') {
+      return 'Pass & Play';
+    }
+
+    return 'Ludo Game';
   };
 
   return (
@@ -49,119 +60,105 @@ export default function GameScreen({
         barStyle="light-content"
       />
 
-      <View
-        style={styles.header}
-      >
-        <Text
-          style={styles.title}
-        >
+      <View style={styles.header}>
+        <Text style={styles.title}>
           Ludo Supreme
         </Text>
 
-        <Text
-          style={styles.mode}
-        >
-          {gameMode === 'computer'
-            ? 'Vs Computer'
-            : 'Pass & Play'}
+        <Text style={styles.mode}>
+          {getGameModeName()}
         </Text>
       </View>
 
-      <View
-        style={styles.gameArea}
+      <ScrollView
+        contentContainerStyle={
+          styles.scrollContent
+        }
       >
-        <Text
-          style={styles.placeholder}
-        >
-          Game Board Coming Soon
+        <View style={styles.boardContainer}>
+          <LudoBoard />
+        </View>
+
+        <Text style={styles.turnText}>
+          Roll the dice
         </Text>
 
-        <Text
-          style={styles.info}
-        >
-          Roll the dice to start playing
-        </Text>
-
-        <View
-          style={styles.diceContainer}
-        >
+        <View style={styles.diceContainer}>
           <DiceFace
             value={diceValue}
-            size={90}
+            size={80}
           />
         </View>
 
-        <PrimaryButton
-          title="Roll Dice"
-          onPress={
-            handleRollDice
-          }
-        />
-      </View>
+        <View style={styles.buttonContainer}>
+          <PrimaryButton
+            title="Roll Dice 🎲"
+            onPress={handleRollDice}
+          />
+        </View>
 
-      <View
-        style={styles.bottom}
-      >
-        <PrimaryButton
-          title="Back to Menu"
-          onPress={onBack}
-        />
-      </View>
+        <View style={styles.backContainer}>
+          <PrimaryButton
+            title="Back to Menu"
+            onPress={onBack}
+          />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#020617',
-    },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#020617',
+  },
 
-    header: {
-      padding: 20,
-      alignItems: 'center',
-    },
+  header: {
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
 
-    title: {
-      fontSize: 28,
-      fontWeight: 'bold',
-      color: '#FFFFFF',
-    },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
 
-    mode: {
-      marginTop: 6,
-      fontSize: 16,
-      color: '#94A3B8',
-    },
+  mode: {
+    marginTop: 5,
+    fontSize: 15,
+    color: '#94A3B8',
+  },
 
-    gameArea: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 24,
-    },
+  scrollContent: {
+    alignItems: 'center',
+    paddingBottom: 25,
+  },
 
-    placeholder: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#FFFFFF',
-      textAlign: 'center',
-    },
+  boardContainer: {
+    width: '94%',
+    marginTop: 5,
+  },
 
-    info: {
-      marginTop: 10,
-      marginBottom: 30,
-      fontSize: 16,
-      color: '#94A3B8',
-      textAlign: 'center',
-    },
+  turnText: {
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
 
-    diceContainer: {
-      marginBottom: 30,
-    },
+  diceContainer: {
+    marginTop: 15,
+    marginBottom: 20,
+  },
 
-    bottom: {
-      padding: 20,
-    },
-  });
+  buttonContainer: {
+    width: '80%',
+  },
+
+  backContainer: {
+    width: '80%',
+    marginTop: 15,
+  },
+});
