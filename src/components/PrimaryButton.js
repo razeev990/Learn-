@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Pressable,
@@ -17,11 +16,11 @@ export default function PrimaryButton({
       disabled={disabled}
       style={({ pressed }) => [
         styles.button,
-        disabled && styles.disabledButton,
         pressed && !disabled && styles.pressedButton,
+        disabled && styles.disabledButton,
       ]}
     >
-      <Text style={styles.text}>
+      <Text style={styles.buttonText}>
         {title}
       </Text>
     </Pressable>
@@ -30,26 +29,46 @@ export default function PrimaryButton({
 
 const styles = StyleSheet.create({
   button: {
-    minWidth: 150,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
+    width: '100%',
+    minHeight: 58,
+
     justifyContent: 'center',
+    alignItems: 'center',
+
+    paddingHorizontal: 20,
+
+    backgroundColor: '#2563EB',
+
+    borderRadius: 16,
+
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+
+    elevation: 8,
+  },
+
+  pressedButton: {
+    transform: [
+      {
+        scale: 0.96,
+      },
+    ],
+
+    opacity: 0.85,
   },
 
   disabledButton: {
     opacity: 0.5,
   },
 
-  pressedButton: {
-    opacity: 0.8,
-  },
-
-  text: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  buttonText: {
+    fontSize: 19,
     fontWeight: 'bold',
+
+    color: '#FFFFFF',
+
+    textAlign: 'center',
+
+    letterSpacing: 0.5,
   },
 });
