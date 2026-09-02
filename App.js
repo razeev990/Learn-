@@ -13,6 +13,11 @@ import {
 import HomeScreen from './src/screens/HomeScreen';
 import GameScreen from './src/screens/GameScreen';
 
+import {
+  createInitialGameState,
+  startGame,
+} from './src/services/gameStateService';
+
 export default function App() {
   const [
     currentScreen,
@@ -24,9 +29,25 @@ export default function App() {
     setGameMode,
   ] = useState(null);
 
+  const [
+    gameState,
+    setGameState,
+  ] = useState(
+    createInitialGameState(2)
+  );
+
   const handleStartGame = (
     selectedMode
   ) => {
+    const newGameState =
+      startGame(
+        createInitialGameState(2)
+      );
+
+    setGameState(
+      newGameState
+    );
+
     setGameMode(
       selectedMode
     );
@@ -37,9 +58,7 @@ export default function App() {
   };
 
   const handleBackToMenu = () => {
-    setGameMode(
-      null
-    );
+    setGameMode(null);
 
     setCurrentScreen(
       'home'
@@ -52,6 +71,7 @@ export default function App() {
     return (
       <GameScreen
         gameMode={gameMode}
+        players={gameState.players}
         onBack={handleBackToMenu}
       />
     );
