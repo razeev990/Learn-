@@ -7,11 +7,40 @@ import {
 
 const BOARD_SIZE = 15;
 
+const HOME_POSITIONS = {
+  Red: [
+    [1, 1],
+    [1, 4],
+    [4, 1],
+    [4, 4],
+  ],
+
+  Green: [
+    [1, 10],
+    [1, 13],
+    [4, 10],
+    [4, 13],
+  ],
+
+  Yellow: [
+    [10, 1],
+    [10, 4],
+    [13, 1],
+    [13, 4],
+  ],
+
+  Blue: [
+    [10, 10],
+    [10, 13],
+    [13, 10],
+    [13, 13],
+  ],
+};
+
 const getCellColor = (
   row,
   column
 ) => {
-  // Red area
   if (
     row < 6 &&
     column < 6
@@ -19,7 +48,6 @@ const getCellColor = (
     return '#FCA5A5';
   }
 
-  // Green area
   if (
     row < 6 &&
     column > 8
@@ -27,7 +55,6 @@ const getCellColor = (
     return '#86EFAC';
   }
 
-  // Yellow area
   if (
     row > 8 &&
     column < 6
@@ -35,7 +62,6 @@ const getCellColor = (
     return '#FDE047';
   }
 
-  // Blue area
   if (
     row > 8 &&
     column > 8
@@ -46,46 +72,47 @@ const getCellColor = (
   return '#FFFFFF';
 };
 
-const getTokenColor = (
+const getTokenAtPosition = (
+  players,
   row,
   column
 ) => {
-  // Red tokens
-  if (
-    (row === 1 || row === 4) &&
-    (column === 1 || column === 4)
-  ) {
-    return '#EF4444';
-  }
+  for (const player of players) {
+    const homePositions =
+      HOME_POSITIONS[player.name] || [];
 
-  // Green tokens
-  if (
-    (row === 1 || row === 4) &&
-    (column === 10 || column === 13)
-  ) {
-    return '#22C55E';
-  }
+    for (
+      let index = 0;
+      index < player.tokens.length;
+      index++
+    ) {
+      const token =
+        player.tokens[index];
 
-  // Yellow tokens
-  if (
-    (row === 10 || row === 13) &&
-    (column === 1 || column === 4)
-  ) {
-    return '#EAB308';
-  }
+      if (token.position === 0) {
+        const homePosition =
+          homePositions[index];
 
-  // Blue tokens
-  if (
-    (row === 10 || row === 13) &&
-    (column === 10 || column === 13)
-  ) {
-    return '#3B82F6';
+        if (
+          homePosition &&
+          homePosition[0] === row &&
+          homePosition[1] === column
+        ) {
+          return {
+            ...token,
+            color: player.color,
+          };
+        }
+      }
+    }
   }
 
   return null;
 };
 
-export default function LudoBoard() {
+export default function LudoBoard({
+  players = [],
+}) {
   const cells = [];
 
   for (
@@ -98,14 +125,9 @@ export default function LudoBoard() {
       column < BOARD_SIZE;
       column++
     ) {
-      const cellColor =
-        getCellColor(
-          row,
-          column
-        );
-
-      const tokenColor =
-        getTokenColor(
+      const token =
+        getTokenAtPosition(
+          players,
           row,
           column
         );
@@ -117,17 +139,20 @@ export default function LudoBoard() {
             styles.cell,
             {
               backgroundColor:
-                cellColor,
+                getCellColor(
+                  row,
+                  column
+                ),
             },
           ]}
         >
-          {tokenColor ? (
+          {token ? (
             <View
               style={[
                 styles.token,
                 {
                   backgroundColor:
-                    tokenColor,
+                    token.color,
                 },
               ]}
             />
