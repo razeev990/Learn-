@@ -1,24 +1,58 @@
 import React from 'react';
+
 import {
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
+const DOTS = {
+  1: [
+    [1, 1],
+  ],
+
+  2: [
+    [0, 0],
+    [2, 2],
+  ],
+
+  3: [
+    [0, 0],
+    [1, 1],
+    [2, 2],
+  ],
+
+  4: [
+    [0, 0],
+    [0, 2],
+    [2, 0],
+    [2, 2],
+  ],
+
+  5: [
+    [0, 0],
+    [0, 2],
+    [1, 1],
+    [2, 0],
+    [2, 2],
+  ],
+
+  6: [
+    [0, 0],
+    [0, 2],
+    [1, 0],
+    [1, 2],
+    [2, 0],
+    [2, 2],
+  ],
+};
+
 export default function DiceFace({
   value = 1,
-  size = 60,
+  size = 80,
 }) {
-  const dots = {
-    1: [5],
-    2: [1, 9],
-    3: [1, 5, 9],
-    4: [1, 3, 7, 9],
-    5: [1, 3, 5, 7, 9],
-    6: [1, 3, 4, 6, 7, 9],
-  };
-
-  const activeDots = dots[value] || dots[1];
+  const dots =
+    DOTS[value] ||
+    DOTS[1];
 
   return (
     <View
@@ -27,58 +61,71 @@ export default function DiceFace({
         {
           width: size,
           height: size,
-          borderRadius: size * 0.15,
         },
       ]}
     >
-      <View style={styles.grid}>
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((position) => (
-          <View
-            key={position}
-            style={styles.dotContainer}
-          >
-            {activeDots.includes(position) && (
-              <View
-                style={[
-                  styles.dot,
-                  {
-                    width: size * 0.12,
-                    height: size * 0.12,
-                    borderRadius: size * 0.06,
-                  },
-                ]}
-              />
-            )}
-          </View>
-        ))}
-      </View>
+      {dots.map(
+        (
+          position,
+          index
+        ) => {
+          const row =
+            position[0];
+
+          const column =
+            position[1];
+
+          return (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                {
+                  width:
+                    size * 0.16,
+
+                  height:
+                    size * 0.16,
+
+                  borderRadius:
+                    size * 0.08,
+
+                  top:
+                    `${row * 36 + 12}%`,
+
+                  left:
+                    `${column * 36 + 12}%`,
+                },
+              ]}
+            />
+          );
+        }
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  dice: {
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-  },
+const styles =
+  StyleSheet.create({
+    dice: {
+      backgroundColor:
+        '#FFFFFF',
 
-  grid: {
-    width: '80%',
-    height: '80%',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
+      borderRadius: 14,
 
-  dotContainer: {
-    width: '33.33%',
-    height: '33.33%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+      borderWidth: 3,
 
-  dot: {
-    backgroundColor: '#111827',
-  },
-});
+      borderColor:
+        '#CBD5E1',
+
+      elevation: 7,
+    },
+
+    dot: {
+      position:
+        'absolute',
+
+      backgroundColor:
+        '#111827',
+    },
+  });
