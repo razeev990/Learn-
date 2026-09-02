@@ -1,79 +1,60 @@
-import Sound from 'react-native-sound';
+import { Audio } from 'expo-av';
 
-Sound.setCategory('Playback');
+const soundFiles = {
+  cut: require('../../assets/sounds/cut.mp3'),
 
-const sounds = {
-  cut: new Sound(
-    require('../../assets/sounds/cut.mp3'),
-    error => {
-      if (error) {
-        console.log('Cut sound load error:', error);
-      }
-    }
+  diceRoll: require(
+    '../../assets/sounds/dice-roll.mp3'
   ),
 
-  diceRoll: new Sound(
-    require('../../assets/sounds/dice-roll.mp3'),
-    error => {
-      if (error) {
-        console.log('Dice sound load error:', error);
-      }
-    }
+  move: require(
+    '../../assets/sounds/move.mp3'
   ),
 
-  move: new Sound(
-    require('../../assets/sounds/move.mp3'),
-    error => {
-      if (error) {
-        console.log('Move sound load error:', error);
-      }
-    }
-  ),
-
-  win: new Sound(
-    require('../../assets/sounds/win.mp3'),
-    error => {
-      if (error) {
-        console.log('Win sound load error:', error);
-      }
-    }
+  win: require(
+    '../../assets/sounds/win.mp3'
   ),
 };
 
-const playSound = sound => {
-  if (!sound) {
-    return;
-  }
+const playSound = async (soundFile) => {
+  try {
+    const { sound } =
+      await Audio.Sound.createAsync(
+        soundFile,
+        {
+          shouldPlay: true,
+        }
+      );
 
-  sound.stop(() => {
-    sound.play(success => {
-      if (!success) {
-        console.log('Sound playback failed');
+    sound.setOnPlaybackStatusUpdate(
+      (status) => {
+        if (
+          status.didJustFinish
+        ) {
+          sound.unloadAsync();
+        }
       }
-    });
-  });
+    );
+  } catch (error) {
+    console.log(
+      'Sound error:',
+      error
+    );
+  }
 };
 
 export const playCutSound = () => {
-  playSound(sounds.cut);
+  playSound(soundFiles.cut);
 };
 
 export const playDiceSound = () => {
-  playSound(sounds.diceRoll);
+  playSound(soundFiles.diceRoll);
 };
 
 export const playMoveSound = () => {
-  playSound(sounds.move);
+  playSound(soundFiles.move);
 };
 
 export const playWinSound = () => {
-  playSound(sounds.win);
-};
-
-export const stopAllSounds = () => {
-  Object.values(sounds).forEach(sound => {
-    if (sound) {
-      sound.stop();
-    }
-  });
+  playSound(soundFiles.win);
 };
