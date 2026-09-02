@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Ludo Supreme",
+    "slug": "ludo-supreme",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "com.ludosupreme.game",
+      "versionCode": 1
+    }
+  }
+}
