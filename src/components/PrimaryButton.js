@@ -1,93 +1,66 @@
 import React from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-} from 'react-native';
 
 import {
-  playCutSound,
-} from '../services/SoundService';
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
 
 export default function PrimaryButton({
   title,
   onPress,
   disabled = false,
 }) {
-  const handlePress = () => {
-    if (disabled) {
-      return;
-    }
-
-    playCutSound();
-
-    if (onPress) {
-      onPress();
-    }
-  };
-
   return (
-    <Pressable
-      onPress={handlePress}
+    <TouchableOpacity
+      activeOpacity={0.8}
       disabled={disabled}
-      style={({ pressed }) => [
+      onPress={onPress}
+      style={[
         styles.button,
-        pressed &&
-          !disabled &&
-          styles.pressedButton,
         disabled &&
           styles.disabledButton,
       ]}
     >
-      <Text style={styles.buttonText}>
+      <Text
+        style={styles.text}
+      >
         {title}
       </Text>
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    width: '100%',
-    minHeight: 58,
+const styles =
+  StyleSheet.create({
+    button: {
+      minHeight: 52,
 
-    justifyContent: 'center',
-    alignItems: 'center',
+      borderRadius: 14,
 
-    paddingHorizontal: 20,
+      justifyContent:
+        'center',
 
-    backgroundColor: '#2563EB',
+      alignItems:
+        'center',
 
-    borderRadius: 16,
+      paddingHorizontal: 20,
 
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+      backgroundColor:
+        '#2563EB',
 
-    elevation: 8,
-  },
+      elevation: 4,
+    },
 
-  pressedButton: {
-    transform: [
-      {
-        scale: 0.96,
-      },
-    ],
+    disabledButton: {
+      opacity: 0.5,
+    },
 
-    opacity: 0.85,
-  },
+    text: {
+      color: '#FFFFFF',
 
-  disabledButton: {
-    opacity: 0.5,
-  },
+      fontSize: 17,
 
-  buttonText: {
-    fontSize: 19,
-    fontWeight: 'bold',
-
-    color: '#FFFFFF',
-
-    textAlign: 'center',
-
-    letterSpacing: 0.5,
-  },
-});
+      fontWeight: 'bold',
+    },
+  });
