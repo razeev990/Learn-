@@ -1,5 +1,7 @@
 import React from 'react';
+
 import {
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -10,92 +12,172 @@ import PrimaryButton from '../components/PrimaryButton';
 export default function HomeScreen({
   onStartGame,
 }) {
-  const handleVsComputer = () => {
-    console.log('Vs Computer selected');
-
-    if (onStartGame) {
-      onStartGame('computer');
-    }
-  };
-
-  const handleOnline = () => {
-    console.log('Online selected');
-  };
-
-  const handleTeamUp = () => {
-    console.log('Team Up selected');
-  };
-
-  const handlePassPlay = () => {
-    console.log('Pass & Play selected');
-
-    if (onStartGame) {
-      onStartGame('pass-play');
-    }
-  };
-
   return (
-    <View style={styles.container}>
-      <View style={styles.menuContainer}>
+    <ScrollView
+      contentContainerStyle={
+        styles.container
+      }
+    >
+      <Text
+        style={styles.title}
+      >
+        LUDO SUPREME
+      </Text>
 
-        <Text style={styles.title}>
-          LUDO SUPREME
+      <Text
+        style={styles.subtitle}
+      >
+        Play • Compete • Win
+      </Text>
+
+      <View
+        style={styles.logoContainer}
+      >
+        <Text
+          style={styles.logo}
+        >
+          🎲
         </Text>
-
-        <PrimaryButton
-          title="Vs Computer"
-          onPress={handleVsComputer}
-        />
-
-        <View style={styles.space} />
-
-        <PrimaryButton
-          title="Online"
-          onPress={handleOnline}
-        />
-
-        <View style={styles.space} />
-
-        <PrimaryButton
-          title="Team Up"
-          onPress={handleTeamUp}
-        />
-
-        <View style={styles.space} />
-
-        <PrimaryButton
-          title="Pass & Play"
-          onPress={handlePassPlay}
-        />
-
       </View>
-    </View>
+
+      <View
+        style={styles.buttons}
+      >
+        <PrimaryButton
+          title="🤖 Play with Computer"
+          onPress={() =>
+            onStartGame(
+              'computer'
+            )
+          }
+        />
+
+        <View
+          style={styles.space}
+        />
+
+        <PrimaryButton
+          title="🌐 Online"
+          onPress={() =>
+            onStartGame(
+              'online'
+            )
+          }
+        />
+
+        <View
+          style={styles.space}
+        />
+
+        <PrimaryButton
+          title="👥 Team Mode"
+          onPress={() =>
+            onStartGame(
+              'team'
+            )
+          }
+        />
+
+        <View
+          style={styles.space}
+        />
+
+        <PrimaryButton
+          title="📱 Pass & Play"
+          onPress={() =>
+            onStartGame(
+              'pass-play'
+            )
+          }
+        />
+      </View>
+
+      <Text
+        style={styles.footer}
+      >
+        Ludo Supreme 🎮
+      </Text>
+    </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      flexGrow: 1,
 
-  menuContainer: {
-    width: '80%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+      backgroundColor:
+        '#020617',
 
-  title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 40,
-    textAlign: 'center',
-  },
+      alignItems:
+        'center',
 
-  space: {
-    height: 15,
-  },
-});
+      justifyContent:
+        'center',
+
+      padding: 25,
+    },
+
+    title: {
+      fontSize: 32,
+
+      fontWeight:
+        'bold',
+
+      color:
+        '#FFFFFF',
+
+      letterSpacing: 2,
+    },
+
+    subtitle: {
+      marginTop: 8,
+
+      fontSize: 16,
+
+      color:
+        '#94A3B8',
+    },
+
+    logoContainer: {
+      marginVertical: 40,
+
+      width: 150,
+
+      height: 150,
+
+      borderRadius: 75,
+
+      backgroundColor:
+        '#1E293B',
+
+      justifyContent:
+        'center',
+
+      alignItems:
+        'center',
+
+      elevation: 8,
+    },
+
+    logo: {
+      fontSize: 80,
+    },
+
+    buttons: {
+      width: '100%',
+    },
+
+    space: {
+      height: 15,
+    },
+
+    footer: {
+      marginTop: 35,
+
+      color:
+        '#64748B',
+
+      fontSize: 14,
+    },
+  });
