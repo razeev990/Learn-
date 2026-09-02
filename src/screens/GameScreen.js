@@ -25,6 +25,7 @@ import {
 
 export default function GameScreen({
   gameMode,
+  players,
   onBack,
 }) {
   const [
