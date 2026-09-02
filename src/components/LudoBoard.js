@@ -2,7 +2,6 @@ import React from 'react';
 
 import {
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
@@ -12,49 +11,78 @@ const getCellColor = (
   row,
   column
 ) => {
-  // Red home
+  // Red area
   if (
     row < 6 &&
     column < 6
+  ) {
+    return '#FCA5A5';
+  }
+
+  // Green area
+  if (
+    row < 6 &&
+    column > 8
+  ) {
+    return '#86EFAC';
+  }
+
+  // Yellow area
+  if (
+    row > 8 &&
+    column < 6
+  ) {
+    return '#FDE047';
+  }
+
+  // Blue area
+  if (
+    row > 8 &&
+    column > 8
+  ) {
+    return '#93C5FD';
+  }
+
+  return '#FFFFFF';
+};
+
+const getTokenColor = (
+  row,
+  column
+) => {
+  // Red tokens
+  if (
+    (row === 1 || row === 4) &&
+    (column === 1 || column === 4)
   ) {
     return '#EF4444';
   }
 
-  // Green home
+  // Green tokens
   if (
-    row < 6 &&
-    column > 8
+    (row === 1 || row === 4) &&
+    (column === 10 || column === 13)
   ) {
     return '#22C55E';
   }
 
-  // Yellow home
+  // Yellow tokens
   if (
-    row > 8 &&
-    column < 6
+    (row === 10 || row === 13) &&
+    (column === 1 || column === 4)
   ) {
     return '#EAB308';
   }
 
-  // Blue home
+  // Blue tokens
   if (
-    row > 8 &&
-    column > 8
+    (row === 10 || row === 13) &&
+    (column === 10 || column === 13)
   ) {
     return '#3B82F6';
   }
 
-  // Center
-  if (
-    row >= 6 &&
-    row <= 8 &&
-    column >= 6 &&
-    column <= 8
-  ) {
-    return '#FFFFFF';
-  }
-
-  return '#F8FAFC';
+  return null;
 };
 
 export default function LudoBoard() {
@@ -76,6 +104,12 @@ export default function LudoBoard() {
           column
         );
 
+      const tokenColor =
+        getTokenColor(
+          row,
+          column
+        );
+
       cells.push(
         <View
           key={`${row}-${column}`}
@@ -87,15 +121,16 @@ export default function LudoBoard() {
             },
           ]}
         >
-          {row === 7 &&
-          column === 7 ? (
-            <Text
-              style={
-                styles.centerText
-              }
-            >
-              ★
-            </Text>
+          {tokenColor ? (
+            <View
+              style={[
+                styles.token,
+                {
+                  backgroundColor:
+                    tokenColor,
+                },
+              ]}
+            />
           ) : null}
         </View>
       );
@@ -103,9 +138,7 @@ export default function LudoBoard() {
   }
 
   return (
-    <View
-      style={styles.board}
-    >
+    <View style={styles.board}>
       {cells}
     </View>
   );
@@ -120,10 +153,10 @@ const styles =
       flexDirection: 'row',
       flexWrap: 'wrap',
 
-      backgroundColor: '#020617',
+      backgroundColor: '#FFFFFF',
 
       borderWidth: 3,
-      borderColor: '#FFFFFF',
+      borderColor: '#111827',
     },
 
     cell: {
@@ -137,8 +170,15 @@ const styles =
       alignItems: 'center',
     },
 
-    centerText: {
-      fontSize: 18,
-      color: '#111827',
+    token: {
+      width: '65%',
+      height: '65%',
+
+      borderRadius: 999,
+
+      borderWidth: 1.5,
+      borderColor: '#FFFFFF',
+
+      elevation: 3,
     },
   });
