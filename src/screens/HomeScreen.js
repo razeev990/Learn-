@@ -1,77 +1,101 @@
 import React from 'react';
 import {
-  SafeAreaView,
-  StatusBar,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import GameHeader from '../components/GameHeader';
 import PrimaryButton from '../components/PrimaryButton';
 
 export default function HomeScreen({
   onStartGame,
 }) {
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-      />
+  const handleVsComputer = () => {
+    console.log('Vs Computer selected');
 
-      <View style={styles.content}>
-        <GameHeader
-          title="Ludo Supreme"
-          subtitle="Welcome to the game"
+    if (onStartGame) {
+      onStartGame('computer');
+    }
+  };
+
+  const handleOnline = () => {
+    console.log('Online selected');
+  };
+
+  const handleTeamUp = () => {
+    console.log('Team Up selected');
+  };
+
+  const handlePassPlay = () => {
+    console.log('Pass & Play selected');
+
+    if (onStartGame) {
+      onStartGame('pass-play');
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.menuContainer}>
+
+        <Text style={styles.title}>
+          LUDO SUPREME
+        </Text>
+
+        <PrimaryButton
+          title="Vs Computer"
+          onPress={handleVsComputer}
         />
 
-        <View style={styles.center}>
-          <Text style={styles.welcomeText}>
-            Ready to play?
-          </Text>
+        <View style={styles.space} />
 
-          <Text style={styles.description}>
-            Start a new Ludo game and enjoy.
-          </Text>
+        <PrimaryButton
+          title="Online"
+          onPress={handleOnline}
+        />
 
-          <PrimaryButton
-            title="Start Game"
-            onPress={onStartGame}
-          />
-        </View>
+        <View style={styles.space} />
+
+        <PrimaryButton
+          title="Team Up"
+          onPress={handleTeamUp}
+        />
+
+        <View style={styles.space} />
+
+        <PrimaryButton
+          title="Pass & Play"
+          onPress={handlePassPlay}
+        />
+
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827',
-  },
-
-  content: {
-    flex: 1,
-  },
-
-  center: {
-    flex: 1,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
   },
 
-  welcomeText: {
-    fontSize: 28,
+  menuContainer: {
+    width: '80%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  title: {
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    marginBottom: 40,
+    textAlign: 'center',
   },
 
-  description: {
-    marginTop: 10,
-    marginBottom: 30,
-    fontSize: 16,
-    color: '#9CA3AF',
-    textAlign: 'center',
+  space: {
+    height: 15,
   },
 });
