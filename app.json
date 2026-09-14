@@ -19,6 +19,9 @@
     },
     "android": {
       "package": "com.razeev990.onlineludo",
+      "permissions": [
+        "VIBRATE"
+      ],
 
       "adaptiveIcon": {
         "foregroundImage": "./icon.png",
