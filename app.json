@@ -19,8 +19,6 @@
     },
     "android": {
       "package": "com.razeev990.onlineludo",
-      "permissions": [
-  "android.permission.RECORD_AUDIO"
 ],
       "adaptiveIcon": {
         "foregroundImage": "./icon.png",
