@@ -8,17 +8,11 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
-import {
-  createAgoraRtcEngine,
-  ChannelProfileType,
-  ClientRoleType
-} from 'react-native-agora';
 
 import {
   SUPABASE_PROJECT_REF,
   SUPABASE_ANON_KEY,
   SUPABASE_REST_URL,
-  AGORA_APP_ID,
   supabaseHeaders,
   BOARD_SIZE,
   CELL_SIZE,
@@ -73,9 +67,6 @@ export default function App() {
   const [chatModal, setChatModal] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInputText, setChatInputText] = useState('');
-  const [isMicOn, setIsMicOn] = useState(false);
-  const [isVoiceUnlocked, setIsVoiceUnlocked] = useState(false);
-  const [voiceUsers, setVoiceUsers] = useState({});
 
   const [selectedEntryFee, setSelectedEntryFee] = useState(50);
   const [matchPrizePool, setMatchPrizePool] = useState(0);
@@ -163,6 +154,9 @@ export default function App() {
     YELLOW: [-1,-1,-1,-1]
   });
 
+  // 🔄 Reconnecting indicator state
+  const [reconnectingPlayers, setReconnectingPlayers] = useState({});
+
   // ========== REFS ==========
   const pawnsRef = useRef(pawns);
   pawnsRef.current = pawns;
@@ -195,7 +189,12 @@ export default function App() {
   useEffect(() => { gameModeRef.current = gameMode; }, [gameMode]);
 
   const ws = useRef(null);
-  const agoraEngine = useRef(null);
+
+  // 🔄 Heartbeat tracking refs
+  const playerHeartbeatRef = useRef({});
+  const reconnectingPlayersRef = useRef({});
+  const heartbeatSendIntervalRef = useRef(null);
+  const heartbeatWatchdogRef = useRef(null);
 
   // ========== SOUND PRELOAD (ONCE) ==========
   useEffect(() => {
@@ -321,25 +320,6 @@ export default function App() {
     gameMode,
   ]);
 
-  // ========== INITIALIZE AGORA VOICE ==========
-  const initializeAgoraVoice = async () => {
-    try {
-      if (agoraEngine.current) return true;
-      const engine = createAgoraRtcEngine();
-      agoraEngine.current = engine;
-      engine.initialize({
-        appId: AGORA_APP_ID,
-        channelProfile:
-          ChannelProfileType.ChannelProfileCommunication,
-      });
-      engine.enableAudio();
-      return true;
-    } catch (error) {
-      console.warn('Agora initialization error:', error);
-      agoraEngine.current = null;
-      return false;
-    }
-  };
   const currentTurn = activeColors[turnIndex] || activeColors[0] || 'BLUE';
   
   // ========== SUPABASE USER UPSERT & HEARTBEAT ==========
@@ -618,49 +598,6 @@ export default function App() {
     resetGame();
   };
 
-  const leaveAgoraVoiceChannel = async () => {
-    try {
-      if (agoraEngine.current) {
-        await agoraEngine.current.leaveChannel();
-        await agoraEngine.current.release();
-        agoraEngine.current = null;
-      }
-    } catch (e) {
-      console.warn('Error leaving voice channel:', e);
-    }
-  };
-  // ========== JOIN AGORA VOICE CHANNEL ==========
-  const joinAgoraVoiceChannel = async () => {
-    try {
-      const roomId = roomCodeRef.current;
-      if (!roomId) {
-        console.warn('Voice channel: Room code missing');
-        return false;
-      }
-      const initialized = await initializeAgoraVoice();
-      if (!initialized || !agoraEngine.current) {
-        console.warn('Voice channel: Agora initialization failed');
-        return false;
-      }
-      await agoraEngine.current.joinChannel(
-        null,
-        `ludo_${roomId}`,
-        0,
-        {
-          clientRoleType:
-            ClientRoleType.ClientRoleBroadcaster,
-          channelProfile:
-            ChannelProfileType.ChannelProfileCommunication,
-        }
-      );
-      await agoraEngine.current.muteLocalAudioStream(!isMicOn);
-      console.log('Joined Agora voice channel:', `ludo_${roomId}`);
-      return true;
-    } catch (error) {
-      console.warn('Error joining Agora voice channel:', error);
-      return false;
-    }
-  };
   // ========== HELPER FUNCTIONS ==========
   const deductUserCoins = async (amount) => {
     if (!currentUserRef.current) return false;
@@ -836,6 +773,14 @@ export default function App() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Quit Match', style: 'destructive', onPress: () => {
         if ((gameMode === 'ONLINE' || gameMode === 'HYBRID') && ws.current && ws.current.readyState === WebSocket.OPEN) {
+          // 🔄 Send disconnecting signal first
+          ws.current.send(JSON.stringify({
+            topic: `realtime:room_${roomCode}`,
+            event: 'broadcast',
+            payload: { type: 'PLAYER_DISCONNECTING', data: { color: myColor, name: currentUser?.name } },
+            ref: 'disconnecting_sig'
+          }));
+          // Then final leave signal
           ws.current.send(JSON.stringify({
             topic: `realtime:room_${roomCode}`,
             event: 'broadcast',
@@ -848,6 +793,80 @@ export default function App() {
     ]);
   };
 
+  // ========== HEARTBEAT SYSTEM (Reconnect Detection) ==========
+  useEffect(() => {
+    if (gameMode !== 'ONLINE' && gameMode !== 'HYBRID') {
+      if (heartbeatSendIntervalRef.current) {
+        clearInterval(heartbeatSendIntervalRef.current);
+        heartbeatSendIntervalRef.current = null;
+      }
+      if (heartbeatWatchdogRef.current) {
+        clearInterval(heartbeatWatchdogRef.current);
+        heartbeatWatchdogRef.current = null;
+      }
+      playerHeartbeatRef.current = {};
+      reconnectingPlayersRef.current = {};
+      setReconnectingPlayers({});
+      return;
+    }
+
+    // ---------- SENDER: Broadcast heartbeat every 3 seconds ----------
+    heartbeatSendIntervalRef.current = setInterval(() => {
+      if (
+        ws.current &&
+        ws.current.readyState === WebSocket.OPEN &&
+        myColorRef.current &&
+        currentUserRef.current?.playerId
+      ) {
+        try {
+          ws.current.send(JSON.stringify({
+            topic: `realtime:room_${roomCodeRef.current}`,
+            event: 'broadcast',
+            payload: {
+              type: 'PLAYER_HEARTBEAT',
+              data: {
+                color: myColorRef.current,
+                id: currentUserRef.current.playerId
+              }
+            },
+            ref: `hb_${Date.now()}`
+          }));
+        } catch (e) {}
+      }
+    }, 3000);
+
+    // ---------- WATCHDOG: Check for stale players every 2 seconds ----------
+    heartbeatWatchdogRef.current = setInterval(() => {
+      const now = Date.now();
+      const updatedReconnecting = { ...reconnectingPlayersRef.current };
+      let changed = false;
+
+      Object.keys(playerHeartbeatRef.current).forEach((color) => {
+        if (color === myColorRef.current) return;
+        if (!activeColorsRef.current.includes(color)) return;
+        const lastSeen = playerHeartbeatRef.current[color];
+        if (lastSeen && now - lastSeen > 8000) {
+          if (!updatedReconnecting[color]) {
+            updatedReconnecting[color] = true;
+            changed = true;
+          }
+        }
+      });
+
+      if (changed) {
+        reconnectingPlayersRef.current = updatedReconnecting;
+        setReconnectingPlayers(updatedReconnecting);
+      }
+    }, 2000);
+
+    return () => {
+      if (heartbeatSendIntervalRef.current) clearInterval(heartbeatSendIntervalRef.current);
+      if (heartbeatWatchdogRef.current) clearInterval(heartbeatWatchdogRef.current);
+      heartbeatSendIntervalRef.current = null;
+      heartbeatWatchdogRef.current = null;
+    };
+  }, [gameMode, roomCode]);
+
   const resetGame = () => {
     setPawns({ BLUE:[-1,-1,-1,-1], RED:[-1,-1,-1,-1], GREEN:[-1,-1,-1,-1], YELLOW:[-1,-1,-1,-1] });
     setPlayerMissCount({ BLUE:0, RED:0, GREEN:0, YELLOW:0 });
@@ -857,9 +876,6 @@ export default function App() {
     setIsRolling(false);
     setIsHost(false);
     setChatMessages([]);
-    setIsMicOn(false);
-    setIsVoiceUnlocked(false);
-    setVoiceUsers({});
     setFinishedRankings([]);
     setShowPodiumBoard(false);
     matchStartedRef.current = false;
@@ -870,7 +886,20 @@ export default function App() {
     setOnlineScreen(false);
     setOnlineLobbyModal(false);
     setRoomPlayers({});
-    leaveAgoraVoiceChannel();
+
+    // 🔄 Clear reconnect state
+    playerHeartbeatRef.current = {};
+    reconnectingPlayersRef.current = {};
+    setReconnectingPlayers({});
+    if (heartbeatSendIntervalRef.current) {
+      clearInterval(heartbeatSendIntervalRef.current);
+      heartbeatSendIntervalRef.current = null;
+    }
+    if (heartbeatWatchdogRef.current) {
+      clearInterval(heartbeatWatchdogRef.current);
+      heartbeatWatchdogRef.current = null;
+    }
+
     if (ws.current) ws.current.close();
   };
 
@@ -1733,6 +1762,37 @@ export default function App() {
             roomPlayersRef.current = updatedRoster;
             setRoomPlayers(updatedRoster);
             if (isHostRef.current) sendBroadcast(socket, 'ROSTER_UPDATE_FULL', updatedRoster, 'roster_recovered');
+
+            // 🔄 Clear reconnecting flag
+            if (reconnectingPlayersRef.current[data.color]) {
+              const updatedRC = { ...reconnectingPlayersRef.current };
+              delete updatedRC[data.color];
+              reconnectingPlayersRef.current = updatedRC;
+              setReconnectingPlayers(updatedRC);
+            }
+            playerHeartbeatRef.current[data.color] = Date.now();
+            return;
+          }
+
+          // ========== HEARTBEAT: Player is alive ==========
+          if (type === 'PLAYER_HEARTBEAT') {
+            if (data.color === myColorRef.current) return;
+            playerHeartbeatRef.current[data.color] = Date.now();
+            if (reconnectingPlayersRef.current[data.color]) {
+              const updated = { ...reconnectingPlayersRef.current };
+              delete updated[data.color];
+              reconnectingPlayersRef.current = updated;
+              setReconnectingPlayers(updated);
+            }
+            return;
+          }
+
+          // ========== Player intentionally disconnecting ==========
+          if (type === 'PLAYER_DISCONNECTING') {
+            if (data.color === myColorRef.current) return;
+            const updated = { ...reconnectingPlayersRef.current, [data.color]: true };
+            reconnectingPlayersRef.current = updated;
+            setReconnectingPlayers(updated);
             return;
           }
 
@@ -1882,9 +1942,6 @@ export default function App() {
           else if (type === 'CHAT_MESSAGE') {
             setChatMessages(prev => [...prev, data]);
           }
-          else if (type === 'VOICE_STATUS_UPDATE') {
-            setVoiceUsers(prev => ({ ...prev, [data.color]: data.isMicOn }));
-          }
           else if (type === 'PLAYER_JOINED') {
             const updatedRoster = {
               ...roomPlayersRef.current,
@@ -1896,6 +1953,7 @@ export default function App() {
             if (isHostRef.current && currentUserRef.current) {
               sendBroadcast(socket, 'ROSTER_UPDATE_FULL', updatedRoster, 'roster_full');
             }
+            playerHeartbeatRef.current[data.color] = Date.now(); // 🔄 Init heartbeat
           }
           else if (type === 'ROSTER_UPDATE_FULL') {
             roomPlayersRef.current = data;
@@ -1910,6 +1968,16 @@ export default function App() {
           else if (type === 'PLAYER_LEFT_MATCH') {
             const leftColor = data.color;
             const leftName = data.name || leftColor;
+
+            // 🔄 Remove any reconnecting flag for this color
+            if (reconnectingPlayersRef.current[leftColor]) {
+              const updatedRC = { ...reconnectingPlayersRef.current };
+              delete updatedRC[leftColor];
+              reconnectingPlayersRef.current = updatedRC;
+              setReconnectingPlayers(updatedRC);
+            }
+            delete playerHeartbeatRef.current[leftColor];
+
             if (activeColorsRef.current.length <= 2) {
               Alert.alert('Opponent Left', `${leftName} has left the match. You won!`);
               setShowPodiumBoard(true);
@@ -1943,7 +2011,6 @@ export default function App() {
             }
             setOnlineLobbyModal(false);
             setGameMode(data.playType === 'TEAM' ? 'HYBRID' : 'ONLINE');
-            joinAgoraVoiceChannel();
           }
           else if (type === 'MATCH_STATE') {
             // Snapshot fallback/recovery only. Normal live rolls/moves never use
@@ -2449,44 +2516,6 @@ export default function App() {
       await Share.share({ message: `Join my Ludo Supreme game! Room Code: ${roomCode}` });
     } catch (error) {
       Alert.alert('Copied!', `Room Code ${roomCode} copied.`);
-    }
-  };
-
-  const toggleVoiceMic = async () => {
-    if (!isVoiceUnlocked) {
-      Alert.alert(
-        'Unlock Live Voice Chat',
-        'You have to pay 500 coins to use online live voice chat. Do you want to unlock it?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Pay 500 Coins', onPress: async () => {
-            const success = await deductUserCoins(500);
-            if (success) {
-              setIsVoiceUnlocked(true);
-              executeMicToggle(true);
-            }
-          }}
-        ]
-      );
-      return;
-    }
-    executeMicToggle(!isMicOn);
-  };
-
-  const executeMicToggle = async (nextState) => {
-    setIsMicOn(nextState);
-    try {
-      if (agoraEngine.current) {
-        await agoraEngine.current.muteLocalAudioStream(!nextState);
-      }
-    } catch (e) {}
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({
-        topic: `realtime:room_${roomCodeRef.current}`,
-        event: 'broadcast',
-        payload: { type: 'VOICE_STATUS_UPDATE', data: { color: myColorRef.current, name: currentUserRef.current?.name, isMicOn: nextState } },
-        ref: 'voice_1'
-      }));
     }
   };
 
@@ -3012,7 +3041,7 @@ export default function App() {
     return rendered;
   };
 
-  // UPDATED: renderPlayerCard – name in separate row at bottom
+  // UPDATED: renderPlayerCard – name in separate row at bottom + reconnecting indicator
   const renderPlayerCard = (color, pinHex, isLeftDice = false) => {
     const isPlayable = activeColors.includes(color) && !finishedRankings.includes(color);
     if (!isPlayable) return <View style={styles.playerCardPlaceholder} />;
@@ -3021,8 +3050,11 @@ export default function App() {
     const slotType = playerSlots[color];
     const misses = playerMissCount[color] || 0;
     const badgeText = gameMode === 'HYBRID' ? (slotType === 'LOCAL' ? '📱 Local' : slotType === 'ONLINE' ? '🌐 Online' : '🤖 Bot') : '';
-    const userMicState = voiceUsers[color];
     const playerName = getBaseDynamicLabel(color);
+
+    // 🔄 Show reconnecting only for ONLINE slots (not BOT/LOCAL)
+    const isOnlineSlot = slotType === 'ONLINE' || gameMode === 'ONLINE';
+    const isReconnecting = isOnlineSlot && reconnectingPlayers[color] === true;
 
     const spinVal = spinAnim.interpolate({
       inputRange: [0, 1],
@@ -3047,8 +3079,19 @@ export default function App() {
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => isCurrent && rollDice()}
-          style={[styles.playerCard, isCurrent && styles.activeCardGlow]}
+          style={[
+            styles.playerCard,
+            isCurrent && styles.activeCardGlow,
+            isReconnecting && styles.reconnectingCardDim
+          ]}
         >
+          {/* 🔄 Reconnecting badge (top of card) */}
+          {isReconnecting && (
+            <View style={styles.reconnectingBadge}>
+              <Text style={styles.reconnectingBadgeText}>🔄 Reconnecting...</Text>
+            </View>
+          )}
+
           {/* Upper row: dice, timer, avatar */}
           <View style={styles.cardRow}>
             {isLeftDice ? (
@@ -3061,7 +3104,6 @@ export default function App() {
                 )}
                 <View style={styles.cardAvatarRight}>
                   <PinToken colorHex={pinHex} stackCount={1} />
-                  {userMicState && <Text style={styles.micActiveIndicator}>🎙️</Text>}
                   {misses > 0 && <Text style={styles.missCounterBadge}>⚠️ {misses}/3</Text>}
                   {badgeText !== '' && <Text style={styles.slotSmallBadge}>{badgeText}</Text>}
                 </View>
@@ -3070,7 +3112,6 @@ export default function App() {
               <>
                 <View style={styles.cardAvatarLeft}>
                   <PinToken colorHex={pinHex} stackCount={1} />
-                  {userMicState && <Text style={styles.micActiveIndicator}>🎙️</Text>}
                   {misses > 0 && <Text style={styles.missCounterBadge}>⚠️ {misses}/3</Text>}
                   {badgeText !== '' && <Text style={styles.slotSmallBadge}>{badgeText}</Text>}
                 </View>
@@ -3086,7 +3127,9 @@ export default function App() {
 
           {/* 👇 Name row – full width at bottom */}
           <View style={styles.cardNameRow}>
-            <Text style={styles.cardPlayerName} numberOfLines={1}>{playerName}</Text>
+            <Text style={[styles.cardPlayerName, isReconnecting && styles.reconnectingNameText]} numberOfLines={1}>
+              {playerName}{isReconnecting ? '  🔄' : ''}
+            </Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -4076,9 +4119,6 @@ export default function App() {
         <View style={styles.inGamePoolBox}><Text style={styles.inGamePoolText}>🪙 Pool: {matchPrizePool.toLocaleString()}</Text></View>
         {(gameMode === 'ONLINE' || gameMode === 'HYBRID') && (
           <View style={styles.onlineGameActions}>
-            <TouchableOpacity activeOpacity={0.8} style={[styles.inGameIconBtn, isMicOn ? styles.micBtnActive : styles.micBtnInactive]} onPress={toggleVoiceMic}>
-              <Text style={{ fontSize: 16 }}>{isMicOn ? '🎙️' : '🔇'}</Text>
-            </TouchableOpacity>
             <TouchableOpacity activeOpacity={0.8} style={[styles.inGameIconBtn, styles.chatTriggerBtn]} onPress={() => setChatModal(true)}>
               <Text style={{ fontSize: 16 }}>💬</Text>
               {chatMessages.length > 0 && <View style={styles.chatBadgeDot} />}
