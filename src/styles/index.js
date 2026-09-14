@@ -251,11 +251,10 @@ export const styles = StyleSheet.create({
   timerDangerPulse: { borderColor:'#ef4444', backgroundColor:'#450a0a' },
   onlineGameActions: { flexDirection:'row', alignItems:'center' },
   inGameIconBtn: { width:36, height:36, borderRadius:18, justifyContent:'center', alignItems:'center', marginHorizontal:4, borderWidth:1.5 },
-  micBtnActive: { backgroundColor:'#10b981', borderColor:'#6ee7b7' },
-  micBtnInactive: { backgroundColor:'#334155', borderColor:'#64748b' },
+  
   chatTriggerBtn: { backgroundColor:'#0284c7', borderColor:'#38bdf8', position:'relative' },
   chatBadgeDot: { position:'absolute', top:2, right:2, width:8, height:8, borderRadius:4, backgroundColor:'#facc15' },
-  micActiveIndicator: { fontSize:10, position:'absolute', top:-4, right:-4 },
+  
   chatModalBox: { width:'92%', height:'65%', padding:12, justifyContent:'space-between' },
   chatHeaderRow: { flexDirection:'row', justifyContent:'space-between', alignItems:'center', borderBottomWidth:1, borderBottomColor:'#334155', paddingBottom:8 },
   chatTitleText: { color:'#facc15', fontWeight:'900', fontSize:15 },
