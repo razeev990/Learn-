@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.razeev990.onlineludo",
-]
+
       "adaptiveIcon": {
         "foregroundImage": "./icon.png",
         "backgroundColor": "#0a0f1d"
