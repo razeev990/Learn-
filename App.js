@@ -43,6 +43,7 @@ import { DiceFace } from './src/components/DiceFace';
 import { PinToken } from './src/components/PinToken';
 import BoardCells from './src/components/BoardCells';
 import { TurnTimer } from './src/components/TurnTimer';
+import { haptics } from './src/utils/haptics';
 
 export default function App() {
   // ========== STATE ==========
@@ -156,6 +157,9 @@ export default function App() {
 
   // 🔄 Reconnecting indicator state
   const [reconnectingPlayers, setReconnectingPlayers] = useState({});
+
+  // 📳 Haptic ref — for "your turn" notification
+  const prevTurnForHapticRef = useRef(null);
 
   // ========== REFS ==========
   const pawnsRef = useRef(pawns);
@@ -321,6 +325,16 @@ export default function App() {
   ]);
 
   const currentTurn = activeColors[turnIndex] || activeColors[0] || 'BLUE';
+
+  // ========== YOUR TURN HAPTIC NOTIFICATION ==========
+  useEffect(() => {
+    if (!gameMode) return;
+    if (gameMode === 'BOT') return; // No notification for bot games
+    if (currentTurn === myColor && prevTurnForHapticRef.current !== myColor) {
+      haptics.medium();
+    }
+    prevTurnForHapticRef.current = currentTurn;
+  }, [currentTurn, gameMode, myColor]);
   
   // ========== SUPABASE USER UPSERT & HEARTBEAT ==========
   const syncUserToCloud = async (userObj) => {
@@ -666,6 +680,7 @@ export default function App() {
         updatedUser.playerId,
         updatedUser.coins
       );
+      haptics.success();
       Alert.alert(
         '🎉 Daily Bonus Claimed!',
         `🪙 ${reward} Coins aapke account mein add kar diye gaye hain!`
@@ -1177,6 +1192,7 @@ export default function App() {
         setHasRolled(false);
         setIsMoving(false);
         setIsRolling(false);
+        haptics.warning();
 
         if (winnerColor === myColorRef.current) {
           addWinnerCoins(matchPrizePool);
@@ -1210,6 +1226,7 @@ export default function App() {
       setHasRolled(false);
       setIsMoving(false);
       setIsRolling(false);
+      haptics.warning();
 
       Alert.alert(
         'PLAYER EXITED',
@@ -1271,6 +1288,7 @@ export default function App() {
       spinAnim.setValue(0);
       diceBounceAnim.setValue(1);
       playSound('dice');
+      haptics.medium();
 
       const animation = Animated.parallel([
         Animated.timing(spinAnim, {
@@ -1300,6 +1318,7 @@ export default function App() {
       }
       await new Promise(resolve => animation.start(resolve));
       updatePlayerDice(color, finalValue);
+      haptics.light();
       setIsRolling(false);
       setHasRolled(true);
       hasRolledRef.current = true;
@@ -1329,6 +1348,7 @@ export default function App() {
 
       if (startStep === -1 && finalStep === 0) {
         playSound('move');
+        haptics.selection();
         working[color][index] = 0;
         pawnsRef.current = working;
         setPawns(working);
@@ -1338,6 +1358,7 @@ export default function App() {
         for (let step = 1; step <= steps; step++) {
           visibleStep = startStep + step;
           playSound('move');
+          haptics.selection();
           working = clonePawns(working);
           working[color][index] = visibleStep;
           pawnsRef.current = working;
@@ -1402,6 +1423,7 @@ export default function App() {
 
     setIsRolling(true);
     playSound('dice');
+    haptics.medium();
 
     spinAnim.setValue(0);
     diceBounceAnim.setValue(1);
@@ -1457,6 +1479,7 @@ export default function App() {
 
     // Animation ke baad bhi exactly wahi locked value set hogi.
     updatePlayerDice(currentTurn, lockedFinalVal);
+    haptics.light();
     await sleep(200);
 
     setIsRolling(false);
@@ -1502,6 +1525,7 @@ export default function App() {
 
     if (startStep === -1) {
       playSound('move');
+      haptics.selection();
       const updated = clonePawns(pawnsRef.current);
       updated[color][index] = 0;
       setPawns(updated);
@@ -1516,6 +1540,7 @@ export default function App() {
     for (let step = 1; step <= diceVal; step++) {
       currentStep += 1;
       playSound('move');
+      haptics.selection();
       currentPawnsState = clonePawns(currentPawnsState);
       currentPawnsState[color][index] = currentStep;
       setPawns(currentPawnsState);
@@ -1544,6 +1569,7 @@ export default function App() {
                   const enemyTrackIndex = (START_INDEX[enemyColor] + enemyStep) % 52;
                   if (enemyTrackIndex === myTrackIndex) {
                     playSound('cut');
+                    haptics.heavy();
                     extraTurn = true;
                     return -1;
                   }
@@ -1567,6 +1593,7 @@ export default function App() {
       setFinishedRankings(currentFinished);
       isCurrentColorWinnerNow = true;
       playSound('win');
+      haptics.success();
       const rankTitle = currentFinished.length === 1 ? '🥇 1st Place' : currentFinished.length === 2 ? '🥈 2nd Place' : '🥉 3rd Place';
       Alert.alert('VICTORY!', `${getBaseDynamicLabel(color)} secured ${rankTitle}!`);
     }
@@ -1592,6 +1619,11 @@ export default function App() {
 
     setPawns(updatedPawns);
     setIsMoving(false);
+
+    // 📳 Small buzz if extra turn on rolling 6 (without capture)
+    if (extraTurn && diceVal === 6 && finalStep !== 56) {
+      haptics.light();
+    }
 
     let newActiveColors = activeColors.filter((c) => !currentFinished.includes(c));
     if (isCurrentColorWinnerNow) {
