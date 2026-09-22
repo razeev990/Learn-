@@ -77,6 +77,29 @@ export const styles = StyleSheet.create({
   avatarPickerTriggerText: { color:'#facc15', fontWeight:'bold', fontSize:12 },
   soundToggleRow: { flexDirection:'row', justifyContent:'space-between', alignItems:'center', width:'100%', paddingVertical:4 },
   soundLabelText: { color:'#ffffff', fontSize:13, fontWeight:'bold' },
+  // 🎛️ Quick toggle buttons for gameplay header
+quickToggleBtn: {
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginHorizontal: 4,
+  borderWidth: 1.5,
+  borderColor: '#64748b',
+  backgroundColor: '#334155',
+},
+quickToggleBtnActive: {
+  backgroundColor: '#10b981',
+  borderColor: '#6ee7b7',
+},
+quickToggleBtnOff: {
+  backgroundColor: '#7f1d1d',
+  borderColor: '#fca5a5',
+},
+quickToggleEmoji: {
+  fontSize: 16,
+},
   aboutGoldTitle: { color:'#facc15', fontSize:16, fontWeight:'900', marginTop:2 },
   aboutVersionText: { color:'#94a3b8', fontSize:11, marginBottom:6 },
   aboutCreatorText: { color:'#ffffff', fontSize:12, fontWeight:'700' },
