@@ -1,32 +1,40 @@
 import * as Haptics from 'expo-haptics';
 
+let hapticsEnabled = true;
+
+export const setHapticsEnabled = (enabled) => {
+  hapticsEnabled = !!enabled;
+};
+
+export const isHapticsEnabled = () => hapticsEnabled;
+
 export const haptics = {
-  // Very light tap - token movement
   selection: () => {
+    if (!hapticsEnabled) return;
     try { Haptics.selectionAsync(); } catch (e) {}
   },
-  // Light tap
   light: () => {
+    if (!hapticsEnabled) return;
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
   },
-  // Medium buzz - dice roll
   medium: () => {
+    if (!hapticsEnabled) return;
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
   },
-  // Heavy buzz - capture
   heavy: () => {
+    if (!hapticsEnabled) return;
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); } catch (e) {}
   },
-  // Success notification (double-tap pattern on iOS)
   success: () => {
+    if (!hapticsEnabled) return;
     try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
   },
-  // Warning notification
   warning: () => {
+    if (!hapticsEnabled) return;
     try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (e) {}
   },
-  // Error notification
   error: () => {
+    if (!hapticsEnabled) return;
     try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); } catch (e) {}
   },
 };
