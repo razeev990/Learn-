@@ -43,7 +43,7 @@ import { DiceFace } from './src/components/DiceFace';
 import { PinToken } from './src/components/PinToken';
 import BoardCells from './src/components/BoardCells';
 import { TurnTimer } from './src/components/TurnTimer';
-import { haptics } from './src/utils/haptics';
+import { haptics, setHapticsEnabled as setHapticsGlobal } from './src/utils/haptics';
 
 export default function App() {
   // ========== STATE ==========
@@ -64,6 +64,7 @@ export default function App() {
   const [avatarCategory, setAvatarCategory] = useState('FEMALE');
   const [userAvatar, setUserAvatar] = useState('👸');
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hapticsEnabled, setHapticsEnabled] = useState(true);
 
   const [chatModal, setChatModal] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
@@ -391,6 +392,26 @@ export default function App() {
           await syncUserToCloud(parsed);
         }
       } catch (err) {}
+    })();
+  }, []);
+
+  // Load Sound & Haptics settings from storage on launch
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedSound = await AsyncStorage.getItem('@ludo_sound_setting');
+        if (savedSound !== null) {
+          setSoundEnabled(JSON.parse(savedSound));
+        }
+        const savedHaptics = await AsyncStorage.getItem('@ludo_haptics_setting');
+        if (savedHaptics !== null) {
+          const hv = JSON.parse(savedHaptics);
+          setHapticsEnabled(hv);
+          setHapticsGlobal(hv);
+        } else {
+          setHapticsGlobal(true);
+        }
+      } catch (e) {}
     })();
   }, []);
 
@@ -2556,6 +2577,17 @@ export default function App() {
     await AsyncStorage.setItem('@ludo_sound_setting', JSON.stringify(val));
   };
 
+  const toggleHaptics = async (val) => {
+    setHapticsEnabled(val);
+    setHapticsGlobal(val);
+    await AsyncStorage.setItem('@ludo_haptics_setting', JSON.stringify(val));
+    if (val) {
+      setTimeout(() => {
+        try { haptics.medium(); } catch (e) {}
+      }, 100);
+    }
+  };
+
   const selectAvatar = async (avatar) => {
     setUserAvatar(avatar);
     await AsyncStorage.setItem('@ludo_user_avatar', avatar);
@@ -3950,10 +3982,34 @@ export default function App() {
                     <TouchableOpacity style={styles.avatarPickerTriggerBtn} onPress={() => setAvatarModal(true)}><Text style={styles.avatarPickerTriggerText}>🎭 Select Cartoon Profile Picture ➔</Text></TouchableOpacity>
                   </View>
                   <View style={styles.settingsSectionCard}>
-                    <Text style={styles.settingsSectionTitle}>🔊 AUDIO SETTINGS</Text>
+                    <Text style={styles.settingsSectionTitle}>🔊 AUDIO & FEEDBACK</Text>
+
+                    {/* Sound Toggle (existing) */}
                     <View style={styles.soundToggleRow}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}><Text style={{ fontSize: 22, marginRight: 8 }}>{soundEnabled ? '🔊' : '🔇'}</Text><Text style={styles.soundLabelText}>Game Sounds & FX</Text></View>
-                      <Switch trackColor={{ false: '#475569', true: '#10b981' }} thumbColor={soundEnabled ? '#ffffff' : '#94a3b8'} onValueChange={toggleSound} value={soundEnabled} />
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 22, marginRight: 8 }}>{soundEnabled ? '🔊' : '🔇'}</Text>
+                        <Text style={styles.soundLabelText}>Game Sounds & FX</Text>
+                      </View>
+                      <Switch
+                        trackColor={{ false: '#475569', true: '#10b981' }}
+                        thumbColor={soundEnabled ? '#ffffff' : '#94a3b8'}
+                        onValueChange={toggleSound}
+                        value={soundEnabled}
+                      />
+                    </View>
+
+                    {/* 📳 Vibration Toggle (NEW) */}
+                    <View style={[styles.soundToggleRow, { marginTop: 10, borderTopWidth: 0.5, borderTopColor: '#1e293b', paddingTop: 12 }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 22, marginRight: 8 }}>{hapticsEnabled ? '📳' : '📴'}</Text>
+                        <Text style={styles.soundLabelText}>Vibration Feedback</Text>
+                      </View>
+                      <Switch
+                        trackColor={{ false: '#475569', true: '#f59e0b' }}
+                        thumbColor={hapticsEnabled ? '#ffffff' : '#94a3b8'}
+                        onValueChange={toggleHaptics}
+                        value={hapticsEnabled}
+                      />
                     </View>
                   </View>
                   <View style={styles.settingsSectionCard}>
@@ -4149,14 +4205,33 @@ export default function App() {
       <View style={styles.headerBar}>
         <TouchableOpacity style={styles.exitBtn} onPress={handleExitGame}><Text style={styles.exitBtnText}>✕ Exit</Text></TouchableOpacity>
         <View style={styles.inGamePoolBox}><Text style={styles.inGamePoolText}>🪙 Pool: {matchPrizePool.toLocaleString()}</Text></View>
-        {(gameMode === 'ONLINE' || gameMode === 'HYBRID') && (
-          <View style={styles.onlineGameActions}>
+        <View style={styles.onlineGameActions}>
+          {/* 🔊 Quick Sound Toggle */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.quickToggleBtn, soundEnabled ? styles.quickToggleBtnActive : styles.quickToggleBtnOff]}
+            onPress={() => toggleSound(!soundEnabled)}
+          >
+            <Text style={styles.quickToggleEmoji}>{soundEnabled ? '🔊' : '🔇'}</Text>
+          </TouchableOpacity>
+
+          {/* 📳 Quick Vibration Toggle */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.quickToggleBtn, hapticsEnabled ? styles.quickToggleBtnActive : styles.quickToggleBtnOff]}
+            onPress={() => toggleHaptics(!hapticsEnabled)}
+          >
+            <Text style={styles.quickToggleEmoji}>{hapticsEnabled ? '📳' : '📴'}</Text>
+          </TouchableOpacity>
+
+          {/* 💬 Chat (only online/hybrid) */}
+          {(gameMode === 'ONLINE' || gameMode === 'HYBRID') && (
             <TouchableOpacity activeOpacity={0.8} style={[styles.inGameIconBtn, styles.chatTriggerBtn]} onPress={() => setChatModal(true)}>
               <Text style={{ fontSize: 16 }}>💬</Text>
               {chatMessages.length > 0 && <View style={styles.chatBadgeDot} />}
             </TouchableOpacity>
-          </View>
-        )}
+          )}
+        </View>
       </View>
 
       <View style={styles.topCardsRow}>
